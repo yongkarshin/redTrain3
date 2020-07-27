@@ -1,7 +1,6 @@
 class User{
   String name, email, password, phone, credit, datereg, quantity;
-  var description;
-  var id;
+  
 
   User(
     {

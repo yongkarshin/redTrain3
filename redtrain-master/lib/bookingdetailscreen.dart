@@ -1,8 +1,13 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'booking.dart';
 import 'package:http/http.dart' as http;
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:path_provider/path_provider.dart';
  
 void main() => runApp(BookingDetailScreen());
  
@@ -17,6 +22,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   List _bookingdetails;
   String titlecenter = "Loading ticket details...";
   double screenHeight, screenWidth;
+  String _dataString="QR";
+  GlobalKey globalKey=new GlobalKey();
 
   @override
   void initState() {
@@ -48,7 +55,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   child: Container(
                   child: Center(
                     child: Text(titlecenter,style: TextStyle(
-                      color: Colors.red[300],
+                      color: Colors.white,
                       fontSize:22,
                       fontWeight: FontWeight.bold
                     ),),
@@ -61,7 +68,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       return Column(
                         children: <Widget>[
                             InkWell(
-                        onTap: null,
+                        onTap: (){
+                          setState(() {
+                            _dataString=widget.booking.billid+_bookingdetails[index]['id'];
+                            generateQR(index);
+                            _capturePng;
+                          });
+                        },
                         child: Card(
                           elevation: 10,
                           child: Padding(padding: EdgeInsets.all(5),
@@ -81,7 +94,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                                   style: TextStyle(color: Colors.white),
                                 )),
                               Expanded(
-                                flex: 6,
+                                flex: 4,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: <Widget>[
@@ -89,7 +102,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                                     Text("To   : "+_bookingdetails[index]['destination'].toString(),style: TextStyle(color: Colors.white),),
                                     Text(_bookingdetails[index]['departtime'].toString() + " --> "+
                                     _bookingdetails[index]['arrivetime'].toString(),style: TextStyle(color: Colors.white)),
-                                    //Text(_bookingdetails[index]['type'].toString(),style: TextStyle(color: Colors.white),),
+                                    
                                     Text(_bookingdetails[index]['tquantity'] + " " +_bookingdetails[index]['type'].toString() +" seat " ,style: TextStyle(color: Colors.white)),
 
                                   ],
@@ -136,5 +149,75 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
          }).catchError((err){
            print(err);
          });
+       }
+
+       generateQR(int index){
+         showDialog(
+           context: context,
+         builder: (BuildContext context){
+           return AlertDialog(
+             shape: RoundedRectangleBorder(
+               borderRadius: BorderRadius.all(Radius.circular(20.0))
+             ),
+             title: Text("QR code",style: TextStyle(color: Colors.white),),
+             content: Container(
+               color: Colors.white,
+               height: screenWidth / 1.5,
+                  width: screenWidth / 1.5,
+               child: Column(
+               mainAxisSize: MainAxisSize.min,
+               crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  RepaintBoundary(
+                    key: globalKey,
+                    child: QrImage(
+                    data: _dataString,
+                    size: 200.0,
+                    errorStateBuilder: (cxt,err){
+                      return Container(
+                        child:Center(
+                          child: Text("Something went wrong...")
+                        )
+                      );
+                    },
+                  )
+                  ),
+                  
+                ],
+                
+                     
+             ),
+             ),
+             
+             actions: <Widget>[
+               MaterialButton(onPressed: (){
+                 Navigator.of(context).pop(false);
+               },
+               child: Text("Close",style: TextStyle(color: Colors.white),),
+               )
+             ],
+           );
+         }
+         );
+       }
+
+       Future<void> _capturePng() async{
+         try{
+           RenderRepaintBoundary boundary=globalKey.currentContext.findRenderObject();
+            var image=await boundary.toImage();
+            ByteData byteData=await image.toByteData(format: ImageByteFormat.png);
+            Uint8List pngBytes=byteData.buffer.asUint8List();
+
+            //final tempDir=await getTemporaryDirectory();
+            //final file=await new File("${tempDir.path}/image.png").create();
+            //await file.writeAsBytes(pngBytes);
+            //String base64Image=base64Encode(file.readAsBytes(pngBytes));
+
+           
+
+         }catch(err){
+           print(err);
+         }
        }
 }

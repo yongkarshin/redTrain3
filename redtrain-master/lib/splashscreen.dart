@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'mainscreen.dart';
 import 'user.dart';
 import 'package:toast/toast.dart';
-import 'package:redtrain/loginscreen.dart';
 
 void main() => runApp(MyApp());
 
@@ -26,6 +25,8 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: new ThemeData(
+        //primaryColor: Colors.red[300],
+        accentColor: Colors.white,
         brightness: Brightness.dark,
         textTheme: GoogleFonts.ralewayTextTheme(
           Theme.of(context).textTheme,
@@ -71,11 +72,11 @@ class _ProgressIndicatorState extends State<ProgressIndicator>
           //updating states
           if (animation.value > 0.99) {
             controller.stop();
-            //loadpref(this.context);
-            Navigator.push(
-            context,
-            MaterialPageRoute(
-            builder: (BuildContext context) => LoginScreen()));
+            loadpref(this.context);
+            //Navigator.push(
+            //context,
+            //MaterialPageRoute(
+            //builder: (BuildContext context) => LoginScreen()));
           }
         });
       });
@@ -108,7 +109,7 @@ class _ProgressIndicatorState extends State<ProgressIndicator>
     if (email.length > 5) {
       loginUser(email, pass, ctx);
     } else {
-      loginUser("unregistered@redTrain.com", "123456789", ctx);
+      loginUser("unregistered", "123456789", ctx);
     }
   }
 
@@ -136,21 +137,21 @@ class _ProgressIndicatorState extends State<ProgressIndicator>
                 builder: (BuildContext contetx) => MainScreen(
                       user: _user,
                     )));
-      } else{
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-            builder: (BuildContext context) => LoginScreen()));
-      }
-      
-      //else {
-        //Toast.show(
-            //"Fail to login with stored credential. Login as unregistered account.",
+      } //else{
+        //Navigator.push(
             //context,
-            //duration: Toast.LENGTH_LONG,
-            //gravity: Toast.BOTTOM);
-        //loginUser("unregistered@redTrain.com", "123456789", ctx);
+            //MaterialPageRoute(
+            //builder: (BuildContext context) => LoginScreen()));
       //}
+      
+      else {
+        Toast.show(
+            "Fail to login with stored credential. Login as unregistered account.",
+            context,
+            duration: Toast.LENGTH_LONG,
+            gravity: Toast.BOTTOM);
+        loginUser("unregistered@redTrain.com", "123456789", ctx);
+      }
     }).catchError((err) {
       print(err);
     });

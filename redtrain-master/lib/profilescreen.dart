@@ -13,6 +13,7 @@ import 'package:toast/toast.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:intl/intl.dart';
 import 'package:recase/recase.dart';
+import 'package:redtrain/storecredit.dart';
 
 class ProfileScreen extends StatefulWidget {
   final User user;
@@ -72,7 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             child: CachedNetworkImage(
                               fit: BoxFit.cover,
-                              imageUrl:"https://smileylion.com/redtrain/trainimage/${widget.user.email}.jpg",
+                              imageUrl:"https://smileylion.com/redtrain/profileimages/${widget.user.email}.jpg",
                                   
                               placeholder: (context, url) => new SizedBox(
                                   height: 10.0,
@@ -255,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Text("REGISTER NEW ACCOUNT"),
                   ),
                   MaterialButton(
-                    onPressed: null,
+                    onPressed: buyStoreCredit,
                     child: Text("BUY STORE CREDIT"),
                   ),
                   
@@ -293,7 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             manager.emptyCache();
           });
         } else {
-          Toast.show("Tidak berjaya", context,
+          Toast.show("failed", context,
               duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
         }
       }).catchError((err) {
@@ -509,7 +510,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(20.0))),
               title: new Text(
-                "Change your name?",
+                "Change your phone number?",
                 style: TextStyle(
                   color: Colors.white,
                 ),
@@ -686,6 +687,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         );
       },
+    );
+  }
+
+  void buyStoreCredit(){
+    if(widget.user.email == "unregistered"){
+      Toast.show("Please register to use this function", context,
+          duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+      return;
+    }
+    TextEditingController creditController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (BuildContext context){
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20.0))
+          ),
+          title: new Text("Buy Store Credit?",style: TextStyle(color: Colors.white),),
+          content: new TextField(
+            style: TextStyle(color: Colors.white),
+            controller: creditController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Enter RM',
+              icon: Icon(Icons.attach_money,
+              color: Colors.white),
+            ),
+          ),
+          actions: <Widget>[
+            new FlatButton(
+              child: new Text("Yes",style: TextStyle(color: Colors.white)),
+              onPressed: ()=>_buyCredit(creditController.text.toString(), 
+              )),
+            new FlatButton(
+              child: new Text("No",style: TextStyle(color: Colors.white),),
+              onPressed: ()=> {Navigator.of(context).pop()}, 
+              )
+          ],
+        );
+
+      }
+      );
+
+  }
+
+  _buyCredit(String cr){
+    print("RM" + cr);
+    if(cr.length<=0){
+      Toast.show("Please enter correct amount", context,
+          duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (context)=>new AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20.0))
+        ),
+        title: new Text('Buy store credit RM'+cr,style: TextStyle(color: Colors.white),),
+      content: new Text('Are you sure?',style: TextStyle(color: Colors.white),
+      ),
+      actions: <Widget>[
+        MaterialButton(onPressed: (){
+          Navigator.of(context).pop(false);
+          Navigator.of(context).pop(false);
+          Navigator.push(context, MaterialPageRoute(builder: (BuildContext context)=> StoreCreditScreen(user:widget.user,val:cr,
+          )));
+        },
+        child: Text("OK",style: TextStyle(color: Colors.white)),
+        ),
+        MaterialButton(onPressed: (){
+          Navigator.of(context).pop(false);
+          Navigator.of(context).pop(false);
+        },
+        child: Text("Cancel",style: TextStyle(color: Colors.white)),
+        )
+      ],
+      ),
     );
   }
 }

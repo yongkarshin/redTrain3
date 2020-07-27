@@ -11,13 +11,15 @@ import 'package:random_string/random_string.dart';
 import 'mainscreen.dart';
 import 'paymentscreen.dart';
 import 'package:intl/intl.dart';
-import 'booking.dart';
+
+
 
 void main() => runApp(BookingScreen());
 
 class BookingScreen extends StatefulWidget {
   final User user;
   const BookingScreen({Key key, this.user}) : super(key: key);
+
   @override
   _BookingScreenState createState() => _BookingScreenState();
 }
@@ -89,7 +91,7 @@ class _BookingScreenState extends State<BookingScreen> {
                               height: screenHeight / 3.5,
                               width: screenWidth / 2.5,
                               child: InkWell(
-                                onLongPress: () => print("delete"),
+                                onLongPress: () => {print("Delete")},
                                 child: Card(
                                   elevation: 5,
                                   child: Column(
@@ -291,8 +293,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                                         Alignment.centerLeft,
                                                     height: 20,
                                                     child: Text(
-                                                        "Total Amount " +
-                                                            widget.user.credit,
+                                                        "Total Amount ",
                                                         style: TextStyle(
                                                           fontWeight:
                                                               FontWeight.bold,
@@ -334,7 +335,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                       color: Colors.red[300],
                                       textColor: Colors.white,
                                       elevation: 10,
-                                      onPressed: makePayment,
+                                      onPressed: makePaymentDialog,
                                     ),
                                     SizedBox(height: 10),
                                   ],
@@ -541,12 +542,48 @@ class _BookingScreenState extends State<BookingScreen> {
       print(_totalprice);
     });
   }
+  void makePaymentDialog(){
+    showDialog(
+      context: context,
+      builder: (context)=> new AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20.0))
+        ),
+        title: new Text('Proceed with payment?',style: TextStyle(color: Colors.white),),
+        content: new Text('Are you sure?',style: TextStyle(color: Colors.white),),
+        actions: <Widget>[
+          MaterialButton(
+            onPressed: (){
+              Navigator.of(context).pop(false);
+              makePayment();
+          },
+          child: Text("OK",style: TextStyle(color: Colors.white),
+          )),
+          MaterialButton(
+            onPressed: (){
+              Navigator.of(context).pop(false);
+            },
+            child: Text("Cancel",style: TextStyle(color: Colors.white)),
+          )
+        ],
+      ),
+      );
+  }
 
   Future<void> makePayment() async {
+    if(amountpayable<0){
+      double newamount = amountpayable*-1;
+      await _payusingstorecredit(newamount);
+      _loadTicket();
+      return;
+    }
+    var now=new DateTime.now();
+    var formatter = new DateFormat('ddMMyyyy-');
     String orderid = widget.user.email.substring(1, 4) +
         "-" +
-        fromatter.format(now) +
+        formatter.format(now) +
         randomAlphaNumeric(6);
+    
         
     print(orderid);
     await Navigator.push(
@@ -558,6 +595,36 @@ class _BookingScreenState extends State<BookingScreen> {
                   orderid: orderid,
                 )));
     _loadTicket();
+  }
+
+  String generateOrderid() {
+    var now = new DateTime.now();
+    var formatter = new DateFormat('ddMMyyyy-');
+    String orderid = widget.user.email.substring(1, 4) +
+        "-" +
+        formatter.format(now) +
+        randomAlphaNumeric(6);
+    return orderid;
+  }
+
+  Future<void> _payusingstorecredit(double newamount)async{
+     ProgressDialog pr = new ProgressDialog(context,
+        type: ProgressDialogType.Normal, isDismissible: true);
+    pr.style(message: "Updating cart...");
+    pr.show();
+    String urlPayment = server + "/php/paymentsc.php";
+    await http.post(urlPayment,body:{
+      "userid":widget.user.email,
+      "amount":_totalprice.toStringAsFixed(2),
+      "orderid":generateOrderid(),
+      "newcr":newamount.toStringAsFixed(2),
+    }).then((res){
+      
+      print(res.body);
+      pr.dismiss();
+    }).catchError((err){
+      print(err);
+    });
   }
 
   void deleteAll() {

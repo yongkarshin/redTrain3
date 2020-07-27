@@ -21,11 +21,13 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   final f=new DateFormat('dd-MM-yyy hh:mm a');
   var parsedDate;
   double screenHeight, screenWidth;
+  GlobalKey<RefreshIndicatorState> refreshKey;
 
   @override
   void initState(){
     super.initState();
     _loadPaymentHistory();
+    
       }
     
       @override
@@ -112,6 +114,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               ],
             ),
           ),
+            
+          
+          
         );
       }
     
@@ -150,5 +155,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
             builder: (BuildContext context) => BookingDetailScreen(
                   booking: booking,
                 )));
+  }
+  Future<Null> refreshList() async{
+    await Future.delayed(Duration(seconds:2));
+    _loadPaymentHistory();
+    return null;
   }
 }

@@ -36,7 +36,7 @@ if ($signed === $data['x_signature']) {
 
     if ($paidstatus == "Success"){
         
-        $sqlcart = "SELECT TRAINID,TQUANTITY FROM TICKET WHERE EMAIL = '$userid'";
+        $sqlcart = "SELECT TICKET.TRAINID,TICKET.TQUANTITY, TRAIN.PRICE FROM TICKET INNER JOIN TRAIN ON TICKET.TRAINID=TRAIN.ID WHERE TICKET.EMAIL = '$userid'";
         $cartresult = $conn->query($sqlcart);
         if ($cartresult->num_rows > 0)
         {
@@ -44,7 +44,8 @@ if ($signed === $data['x_signature']) {
         {
             $trainid = $row["TRAINID"];
             $tq = $row["TQUANTITY"];
-            $sqlinserttickethistory = "INSERT INTO TICKETHISTORY(EMAIL,ORDERID,BILLID,TRAINID,TQUANTITY) VALUES ('$userid','$orderid','$receiptid','$trainid','$tq')";
+            $pr = $row["PRICE"];
+            $sqlinserttickethistory = "INSERT INTO TICKETHISTORY(EMAIL,ORDERID,BILLID,TRAINID,TQUANTITY,PRICE) VALUES ('$userid','$orderid','$receiptid','$trainid','$tq','$pr')";
             $conn->query($sqlinserttickethistory);
             
             $selecttrain = "SELECT * FROM TRAIN WHERE ID = '$trainid'";
@@ -72,7 +73,7 @@ if ($signed === $data['x_signature']) {
     } 
         else 
     {
-    echo 'Payment Failed! Please try again.';
+    echo 'Payment Failed!';
     }
 }
 

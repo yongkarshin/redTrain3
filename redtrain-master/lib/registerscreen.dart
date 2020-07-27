@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:redtrain/loginscreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:toast/toast.dart';
-
-
+import 'package:email_validator/email_validator.dart';
 void main() => runApp(RegisterScreen());
 
 class RegisterScreen extends StatefulWidget {
@@ -12,6 +11,7 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   double screenHeight;
   bool _isChecked = false;
   String urlRegister = "https://smileylion.com/redtrain/php/register_user.php";
@@ -19,19 +19,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
   TextEditingController _emailEditingController = new TextEditingController();
   TextEditingController _phoneditingController = new TextEditingController();
   TextEditingController _passEditingController = new TextEditingController();
+  bool _validate = true;
+  String _name;
+  String _email;
+  String _phone;
+  String _password;
+
+  final focus0 = FocusNode();
+  final focus1 = FocusNode();
+  final focus2 = FocusNode();
+  final focus3 = FocusNode();
 
   @override
   Widget build(BuildContext context) {
     screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       resizeToAvoidBottomPadding: false,
-      body: Stack(
+      body: //Form(
+          //key: _formKey,
+          //autovalidate: _validate,
+          Stack(
         children: <Widget>[
           upperHalf(context),
-          lowerHalf(context),
+          Form(key: _formKey, autovalidate: _validate, child: lowerHalf()),
           pageTitle(),
         ],
       ),
+      //)
     );
   }
 
@@ -45,10 +59,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget lowerHalf(BuildContext context) {
+  Widget lowerHalf() {
     return Container(
       height: 550,
-      margin: EdgeInsets.only(top: screenHeight / 3.5),
+      margin: EdgeInsets.only(top: screenHeight / 5),
       padding: EdgeInsets.only(left: 10, right: 10),
       child: Column(
         children: <Widget>[
@@ -69,60 +83,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
+                  
                   TextFormField(
-                    style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white),
                       controller: _nameEditingController,
+                      validator: _validateName,
+                      onSaved: (String val) {
+                        _name = val;
+                      },
                       keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.next,
+                      onFieldSubmitted: (v) {
+                        FocusScope.of(context).requestFocus(focus0);
+                      },
                       decoration: InputDecoration(
+                        errorStyle: TextStyle(fontSize:15,color: Colors.red[100]),
+                        hintText: 'Grace',
                         labelText: 'Name',
-                        hintText: 'jason',
-                        helperText: 'This has to be over 2 characters in length.',
-                        helperStyle: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w100),
-                        
-                        icon: Icon(Icons.person),
-                      )
-                      ),
+                      icon: Icon(Icons.person),
+                      )),
                   TextFormField(
-                    style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white),
                       controller: _emailEditingController,
                       keyboardType: TextInputType.emailAddress,
+                      validator: (email)=>EmailValidator.validate(email)?null:"Invalid email address",
+                      onSaved: (String val) {
+                        _email = val;
+                      },
+                      focusNode: focus0,
+                      onFieldSubmitted: (v) {
+                        FocusScope.of(context).requestFocus(focus1);
+                      },
                       decoration: InputDecoration(
+                        errorStyle: TextStyle(fontSize:15,color: Colors.red[100]),
                         labelText: 'Email',
                         hintText: 'abc@example.com',
-                        helperText: 'eg: abc@example.com.',
-                        helperStyle: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w100),
+                        
                         icon: Icon(Icons.email),
                       )),
                   TextFormField(
-                    style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white),
                       controller: _phoneditingController,
                       keyboardType: TextInputType.phone,
+                      validator: _validatePhone,
+                      onSaved: (String val) {
+                        _phone = val;
+                      },
+                      focusNode: focus1,
+                      onFieldSubmitted: (v) {
+                        FocusScope.of(context).requestFocus(focus2);
+                      },
                       decoration: InputDecoration(
                         labelText: 'Phone',
                         hintText: '01x1234567',
-                        helperText: 'This has to be 10 or 11 number in length.',
-                        helperStyle: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w100),
+                        errorStyle: TextStyle(fontSize:15,color: Colors.red[100]),
                         icon: Icon(Icons.phone),
                       )),
                   TextFormField(
                     style: TextStyle(color: Colors.white),
                     controller: _passEditingController,
+                    validator: _validatePass,
+                      onSaved: (String val) {
+                        _password = val;
+                      },
+                    focusNode: focus2,
+                    onFieldSubmitted: (v) {
+                      FocusScope.of(context).requestFocus(focus3);
+                    },
                     decoration: InputDecoration(
                       labelText: 'Password',
-                      helperText: 'This has to be more than 5 with charaters and number.',
-                      helperStyle: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w100),
+                      errorStyle: TextStyle(fontSize:15,color: Colors.red[100]),
                       icon: Icon(Icons.lock),
                     ),
                     obscureText: true,
@@ -144,19 +174,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         onTap: _showEULA,
                         child: Text('I Agree to Terms  ',
                             style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                       ),
                       MaterialButton(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(5.0)),
-                        minWidth: 115,
-                        height: 50,
-                        child: Text('Register', style: TextStyle(fontSize: 16)),
-                        color: Colors.redAccent[50],
-                        textColor: Colors.white,
-                        elevation: 10,
-                        onPressed: _onRegister,
-                      ),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5.0)),
+                          minWidth: 115,
+                          height: 50,
+                          child:
+                              Text('Register', style: TextStyle(fontSize: 16)),
+                          color: Colors.red[300],
+                          textColor: Colors.white,
+                          elevation: 10,
+                          onPressed: () {
+                            if (_formKey.currentState.validate()) {
+                              _formKey.currentState.save();
+                              _onRegister();
+                              _validate=false;
+                            } else {
+                              setState(() {
+                                _validate = true;
+                              });
+                            }
+                          }),
                     ],
                   ),
                 ],
@@ -169,12 +211,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Text("Already register? ", style: TextStyle(fontSize: 16.0, color: Colors.white)),
+              Text("Already register? ",
+                  style: TextStyle(fontSize: 16.0, color: Colors.white)),
               GestureDetector(
                 onTap: _loginScreen,
                 child: Text(
                   "Login",
-                  style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
               ),
             ],
@@ -195,7 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-   void _onRegister() {
+  void _onRegister() {
     String name = _nameEditingController.text;
     String email = _emailEditingController.text;
     String phone = _phoneditingController.text;
@@ -205,34 +251,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
           duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
       return;
     }
-    if((_isEmailValid(email))&&
-      (password.length>5)&&
-      (phone.length>10)||(phone.length<11)&&
-      (name.length>3)){
-     
-    http.post(urlRegister, body: {
-      "name": name,
-      "email": email,
-      "password": password,
-      "phone": phone,
-    }).then((res) {
-      if (res.body == "success") {
-        Navigator.pop(
-            context,
-            MaterialPageRoute(
-                builder: (BuildContext context) => LoginScreen()));
-        Toast.show("Registration success", context,
-            duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
-      } else {
-        Toast.show("Registration failed", context,
-            duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
-      }
-    }).catchError((err) {
-      print(err);
-    });
-    }else{
+    if ((_isEmailValid(email)) &&
+            (password.length > 5) &&
+            (phone.length > 10) ||
+        (phone.length < 11) && (name.length > 3)) {
+      http.post(urlRegister, body: {
+        "name": name,
+        "email": email,
+        "password": password,
+        "phone": phone,
+      }).then((res) {
+        if (res.body == "success") {
+          Navigator.pop(
+              context,
+              MaterialPageRoute(
+                  builder: (BuildContext context) => LoginScreen()));
+          Toast.show("Registration success", context,
+              duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+        } else {
+          Toast.show("Registration failed", context,
+              duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+        }
+      }).catchError((err) {
+        print(err);
+      });
+    } else {
       Toast.show("Check your registration information", context,
-            duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+          duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
     }
   }
 
@@ -243,14 +288,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // return object of type Dialog
         return AlertDialog(
           title: new Text("Already register?",
-              style: TextStyle(fontSize: 25.0, fontWeight: FontWeight.bold)),
+              style: TextStyle(color: Colors.white,fontSize: 25.0, fontWeight: FontWeight.bold)),
           content: new Container(
             height: 100,
             child: Column(
               children: <Widget>[
                 Text(
                   "Are you sure wants to cancel register?",
-                  style: TextStyle(fontSize: 20.0),
+                  style: TextStyle(color: Colors.white,fontSize: 20.0),
                 ),
               ],
             ),
@@ -292,7 +337,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       builder: (BuildContext context) {
         // return object of type Dialog
         return AlertDialog(
-          title: new Text("End-User License Agreement (EULA) of redTrain."),
+          title: new Text("End-User License Agreement (EULA) of redTrain.",style: TextStyle(color: Colors.white)),
           content: new Container(
             height: screenHeight / 2,
             child: Column(
@@ -305,7 +350,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         textAlign: TextAlign.justify,
                         text: TextSpan(
                             style: TextStyle(
-                              color: Colors.black,
+                              color: Colors.white,
                               //fontWeight: FontWeight.w500,
                               fontSize: 12.0,
                             ),
@@ -334,5 +379,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _isEmailValid(String email) {
     return RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email);
+  }
+
+  String _validateName(String value) {
+    Pattern pattern=r'^[A-Za-z]';
+    RegExp regExp=new RegExp(pattern);
+    if (!regExp.hasMatch(value))
+      return 'This has to be A-Z and a-z';
+    else
+      return null;
+  }
+
+  String _validatePhone(String value){
+    Pattern pattern=r'^[0-9]';
+    RegExp regExp=new RegExp(pattern);
+    if(!regExp.hasMatch(value))
+    return 'This has to be 10 or 11 number in length';
+    else
+    return null;
+  }
+
+  String _validatePass(String value){
+    Pattern pattern= r'^(?=.*[0-9]+.*)(?=.*[a-zA-Z]+.*)[0-9a-zA-Z]{6,}$';
+    RegExp regExp=new RegExp(pattern);
+    if(!regExp.hasMatch(value))
+      return 'This has to be more than 5.';
+    else
+      return null;
   }
 }

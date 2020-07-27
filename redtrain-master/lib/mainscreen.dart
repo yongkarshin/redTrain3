@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:redtrain/train.dart';
+import 'package:redtrain/loginscreen.dart';
+import 'package:redtrain/map.dart';
+import 'package:redtrain/report.dart';
 import 'package:redtrain/user.dart';
 import 'package:http/http.dart' as http;
 import 'package:progress_dialog/progress_dialog.dart';
@@ -14,6 +16,8 @@ import 'bookingscreen.dart';
 import 'profilescreen.dart';
 import 'package:redtrain/admintrain.dart';
 import 'paymenthistoryscreen.dart';
+import 'customerbooking.dart';
+import 'reporttrain.dart';
 
 void main() => runApp(MainScreen());
 
@@ -27,6 +31,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  GlobalKey<RefreshIndicatorState> refreshKey;
   List traindata;
   int curnumber = 1;
   double screenHeight, screenWidth;
@@ -43,8 +48,8 @@ class _MainScreenState extends State<MainScreen> {
     "Arau",
   ];
   List<String> deslist = [
-    "Bukit Ketri", 
-    "Arau", 
+    "Bukit Ketri",
+    "Arau",
     "Kodiang",
     "Anak Bukit",
     "Alor Setar",
@@ -55,17 +60,19 @@ class _MainScreenState extends State<MainScreen> {
     "Bukit Mertajam",
     "Bukit Tengah",
     "Butterworth",
-    ];
+  ];
 
   @override
   void initState() {
     super.initState();
     _loadData();
     _loadBookingQuantity();
-    //_sortTrain(selectedOrigin, selectedDes);
+    refreshKey = GlobalKey<RefreshIndicatorState>();
     if (widget.user.email == "admin@redTrain.com") {
-    _isadmin = true;}
+      _isadmin = true;
+    }
   }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -100,382 +107,421 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ],
           ),
-          body: Container(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  Visibility(
-                      visible: visible,
-                      child: Card(
-                          elevation: 10,
-                          child: Padding(
-                              padding: EdgeInsets.all(5),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
+          body: RefreshIndicator(
+            key: refreshKey,
+            color: Colors.red[300],
+            onRefresh: () async {
+              await refreshList();
+            },
+            child: Container(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Visibility(
+                        visible: visible,
+                        child: Card(
+                            elevation: 10,
+                            child: Padding(
+                                padding: EdgeInsets.all(5),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: <Widget>[
+                                      Column(
+                                        children: <Widget>[
+                                          FlatButton(
+                                              onPressed: () =>
+                                                  _sortType("Recent"),
+                                              color: Colors.red[300],
+                                              padding: EdgeInsets.all(10),
+                                              child: Column(
+                                                children: <Widget>[
+                                                  Icon(MdiIcons.update,
+                                                      color: Colors.white),
+                                                  Text("Recent",
+                                                      style: TextStyle(
+                                                          color: Colors.white)),
+                                                ],
+                                              )),
+                                        ],
+                                      ),
+                                      SizedBox(width: 3),
+                                      Column(
+                                        children: <Widget>[
+                                          FlatButton(
+                                              onPressed: () =>
+                                                  _sortType("EXECUTIVE"),
+                                              color: Colors.red[300],
+                                              padding: EdgeInsets.all(10),
+                                              child: Column(
+                                                children: <Widget>[
+                                                  Icon(
+                                                    MdiIcons.seat,
+                                                    color: Colors.white,
+                                                  ),
+                                                  Text("Executive",
+                                                      style: TextStyle(
+                                                          color: Colors.white)),
+                                                ],
+                                              )),
+                                        ],
+                                      ),
+                                      SizedBox(width: 3),
+                                      Column(
+                                        children: <Widget>[
+                                          FlatButton(
+                                              onPressed: () =>
+                                                  _sortType("BUSINESS"),
+                                              color: Colors.red[300],
+                                              padding: EdgeInsets.all(10),
+                                              child: Column(
+                                                children: <Widget>[
+                                                  Icon(
+                                                    MdiIcons.seatReclineExtra,
+                                                    color: Colors.white,
+                                                  ),
+                                                  Text("Business",
+                                                      style: TextStyle(
+                                                          color: Colors.white)),
+                                                ],
+                                              )),
+                                        ],
+                                      ),
+                                      SizedBox(width: 3),
+                                      Column(
+                                        children: <Widget>[
+                                          FlatButton(
+                                              onPressed: () =>
+                                                  _sortType("ECONOMIC"),
+                                              color: Colors.red[300],
+                                              padding: EdgeInsets.all(10),
+                                              child: Column(
+                                                children: <Widget>[
+                                                  Icon(
+                                                    MdiIcons.seatReclineNormal,
+                                                    color: Colors.white,
+                                                  ),
+                                                  Text("Economic",
+                                                      style: TextStyle(
+                                                          color: Colors.white)),
+                                                ],
+                                              )),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                )))),
+                    Visibility(
+                        visible: visible,
+                        child: Card(
+                          elevation: 5,
+                          child: Container(
+                            height: screenHeight / 6,
+                            width: screenWidth / 1.1,
+                            //margin: EdgeInsets.fromLTRB(20, 2, 20, 2),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: <Widget>[
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  //
                                   children: <Widget>[
-                                    Column(
-                                      children: <Widget>[
-                                        FlatButton(
-                                            onPressed: () =>
-                                                _sortType("Recent"),
-                                            color: Colors.red[300],
-                                            padding: EdgeInsets.all(10),
-                                            child: Column(
-                                              children: <Widget>[
-                                                Icon(MdiIcons.update,
-                                                    color: Colors.white),
-                                                Text("Recent",
-                                                    style: TextStyle(
-                                                        color: Colors.white)),
-                                              ],
-                                            )),
-                                      ],
-                                    ),
-                                    SizedBox(width: 3),
-                                    Column(
-                                      children: <Widget>[
-                                        FlatButton(
-                                            onPressed: () =>
-                                                _sortType("EXECUTIVE"),
-                                            color: Colors.red[300],
-                                            padding: EdgeInsets.all(10),
-                                            child: Column(
-                                              children: <Widget>[
-                                                Icon(
-                                                  MdiIcons.seat,
-                                                  color: Colors.white,
-                                                ),
-                                                Text("Executive",
-                                                    style: TextStyle(
-                                                        color: Colors.white)),
-                                              ],
-                                            )),
-                                      ],
-                                    ),
-                                    SizedBox(width: 3),
-                                    Column(
-                                      children: <Widget>[
-                                        FlatButton(
-                                            onPressed: () =>
-                                                _sortType("BUSINESS"),
-                                            color: Colors.red[300],
-                                            padding: EdgeInsets.all(10),
-                                            child: Column(
-                                              children: <Widget>[
-                                                Icon(
-                                                  MdiIcons.seatReclineExtra,
-                                                  color: Colors.white,
-                                                ),
-                                                Text("Business",
-                                                    style: TextStyle(
-                                                        color: Colors.white)),
-                                              ],
-                                            )),
-                                      ],
-                                    ),
-                                    SizedBox(width: 3),
-                                    Column(
-                                      children: <Widget>[
-                                        FlatButton(
-                                            onPressed: () =>
-                                                _sortType("ECONOMIC"),
-                                            color: Colors.red[300],
-                                            padding: EdgeInsets.all(10),
-                                            child: Column(
-                                              children: <Widget>[
-                                                Icon(
-                                                  MdiIcons.seatReclineNormal,
-                                                  color: Colors.white,
-                                                ),
-                                                Text("Economic",
-                                                    style: TextStyle(
-                                                        color: Colors.white)),
-                                              ],
-                                            )),
-                                      ],
-                                    ),
+                                    Flexible(
+                                        //flex: 1,
+                                        child: Container(
+                                      height: 50,
+                                      child: DropdownButton(
+                                        hint: Text("City or station",
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                        value: selectedOrigin,
+                                        onChanged: (newValue) {
+                                          setState(() {
+                                            selectedOrigin = newValue;
+                                            //_sortTrain(selectedOrigin,selectedDes);
+                                            print(selectedOrigin);
+                                          });
+                                        },
+                                        items: originlist.map((selectedOrigin) {
+                                          return DropdownMenuItem(
+                                            child: new Text(selectedOrigin,
+                                                style: TextStyle(
+                                                    color: Colors.white)),
+                                            value: selectedOrigin,
+                                          );
+                                        }).toList(),
+                                      ),
+                                    )),
+                                    //SizedBox(width: 5),
+                                    Flexible(
+                                        //flex: 1,
+                                        child: Container(
+                                      height: 50,
+                                      child: DropdownButton(
+                                        hint: Text("Going Where",
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                        value: selectedDes,
+                                        onChanged: (newValue) {
+                                          setState(() {
+                                            selectedDes = newValue;
+                                            //_sortTrain(selectedOrigin, selectedDes);
+                                            print(selectedDes);
+                                          });
+                                        },
+                                        items: deslist.map((selectedDes) {
+                                          return DropdownMenuItem(
+                                            child: new Text(selectedDes,
+                                                style: TextStyle(
+                                                    color: Colors.white)),
+                                            value: selectedDes,
+                                          );
+                                        }).toList(),
+                                      ),
+                                    )),
                                   ],
                                 ),
-                              )))),
-                  Visibility(
-                      visible: visible,
-                      child: Card(
-                        elevation: 5,
-                        child: Container(
-                          height: screenHeight / 6,
-                          width: screenWidth/1.1,
-                          //margin: EdgeInsets.fromLTRB(20, 2, 20, 2),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: <Widget>[
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                //
-                                children: <Widget>[
-                                  Flexible(
-                                //flex: 1,
-                                  child: Container(
-                                height: 50,
-                                child: DropdownButton(
-                                  hint: Text("City or station",
-                                      style: TextStyle(color: Colors.white)),
-                                  value: selectedOrigin,
-                                  onChanged: (newValue) {
-                                    setState(() {
-                                      selectedOrigin = newValue;
-                                      //_sortTrain(selectedOrigin,selectedDes);
-                                      print(selectedOrigin);
-                                    });
-                                  },
-                                  items: originlist.map((selectedOrigin) {
-                                    return DropdownMenuItem(
-                                      child: new Text(selectedOrigin,
-                                          style:
-                                              TextStyle(color: Colors.white)),
-                                      value: selectedOrigin,
-                                    );
-                                  }).toList(),
-                                ),
-                              )),
-                                //SizedBox(width: 5),
-                              Flexible(
-                                //flex: 1,
-                                  child: Container(
-                                height: 50,
-                                child: DropdownButton(
-                                  
-                                  hint: Text("Going Where",
-                                      style: TextStyle(color: Colors.white)),
-                                  value: selectedDes,
-                                  onChanged: (newValue) {
-                                    setState(() {
-                                      selectedDes = newValue;
-                                      //_sortTrain(selectedOrigin, selectedDes);
-                                      print(selectedDes);
-                                    });
-                                  },
-                                  items: deslist.map((selectedDes) {
-                                    return DropdownMenuItem(
-                                      child: new Text(selectedDes,
-                                          style:
-                                              TextStyle(color: Colors.white)),
-                                      value: selectedDes,
-                                    );
-                                  }).toList(),
-                                ),
-                                
-                                
-                              )),
-
-                                ],
-                              ),
-                              Container(
-                                width: screenWidth/1.5,
-                                //child: Column(
-                                  child: MaterialButton(
-                                  //minWidth: 100,
-                                      color: Colors.red[300],
-                                      onPressed: () => _sortTrain(
-                                          selectedOrigin, selectedDes),
-                                      elevation: 5,
-                                      child: Text(
-                                        "Search",
-                                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                      ))
-                                //)
-                                
-                                  
-                                
-                                  
-                              ),
-                              
-                            ],
-                            
-                          ),
-                        ),
-                      )),
-                  Text(curtype,
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white)),
-                  traindata == null
-                      ? Flexible(
-                          child: Container(
-                              child: Center(
-                                  child: Text(
-                          titlecenter,
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold),
-                        ))))
-                      : Expanded(
-                          child: ListView.builder(
-                              itemCount: traindata.length,
-                              itemBuilder: (context, index) {
-                                //index -= 0;
-                                return Column(
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: <Widget>[
-                                    InkWell(
-                                        onTap: () => addTicketDialog(index),
-                                        child: Card(
-                                          elevation: 10,
-                                          child: Padding(
-                                            padding: EdgeInsets.all(15),
-                                            child: Row(
-                                              children: <Widget>[
-                                                GestureDetector(
-                                                  onTap:()=>null,
-                                                  child: Container(
-                                                  height: screenHeight/12,
-                                                  width: screenWidth/8,
-                                                  child: ClipOval(
-                                                    child: CachedNetworkImage(
-                                                      fit: BoxFit.fill,
-                                                      imageUrl: server+"/trainimage/${traindata[index]['type']}.jpg",
-                                                      placeholder: (context,url)=> new CircularProgressIndicator(),
-                                                      errorWidget: (context,url,error)=> new Icon(Icons.error),
+                                    Container(
+                                        width: screenWidth / 1.5,
+                                        //child: Column(
+                                        child: MaterialButton(
+                                            //minWidth: 100,
+                                            color: Colors.red[300],
+                                            onPressed: () => _sortTrain(
+                                                selectedOrigin, selectedDes),
+                                            elevation: 5,
+                                            child: Text(
+                                              "Search",
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold),
+                                            ))
+                                        //)
+
+                                        ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        )),
+                    Text(curtype,
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                    traindata == null
+                        ? Flexible(
+                            child: Container(
+                                child: Center(
+                                    child: Text(
+                            titlecenter,
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold),
+                          ))))
+                        : Expanded(
+                            child: ListView.builder(
+                                itemCount: traindata.length,
+                                itemBuilder: (context, index) {
+                                  //index -= 0;
+                                  return Column(
+                                    children: <Widget>[
+                                      InkWell(
+                                          onTap: () => addTicketDialog(index),
+                                          child: Card(
+                                            elevation: 10,
+                                            child: Padding(
+                                              padding: EdgeInsets.all(15),
+                                              child: Row(
+                                                children: <Widget>[
+                                                  GestureDetector(
+                                                    onTap: null,
+                                                    child: Container(
+                                                      height: screenHeight / 12,
+                                                      width: screenWidth / 8,
+                                                      child: ClipOval(
+                                                        child:
+                                                            CachedNetworkImage(
+                                                          fit: BoxFit.fill,
+                                                          imageUrl: server +
+                                                              "/trainimage/${traindata[index]['type']}.jpg",
+                                                          placeholder: (context,
+                                                                  url) =>
+                                                              new CircularProgressIndicator(),
+                                                          errorWidget: (context,
+                                                                  url, error) =>
+                                                              new Icon(
+                                                                  Icons.error),
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                                ),
-                                                
-                                                //CircleAvatar(
-                                                  //backgroundColor:
-                                                      //Theme.of(context)
-                                                                  //.platform ==
-                                                              //TargetPlatform
-                                                                  //.android
-                                                          //? Colors.red[300]
-                                                          //: Colors.white,
-                                                  //child: Text(
-                                                    //traindata[index]['type']
-                                                        //.toString()
-                                                        //.substring(0, 1)
-                                                        //.toUpperCase(),
-                                                    //style: TextStyle(
-                                                        //fontSize: 35.0,color: Colors.white),
-                                                  //),
-                                                //),
-                                                SizedBox(width: 10),
-
-                                                Expanded(
-                                                  flex: 4,
-                                                    child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: <Widget>[
-                                                    
-                                                      Text(
-                                                        traindata[index]
-                                                                ['origin'] +
-                                                            " --> " +
-                                                            traindata[index]
-                                                                ['destination'],
-                                                        style: TextStyle(
-                                                            fontSize: 13,
-                                                            fontWeight:
-                                                                FontWeight.bold, color: Colors.white)),
-                                                      //Divider(color: Colors.white),
-                                                      Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: <Widget>[
-                                                        
-                                                        Text(
-                                                          traindata[index][
-                                                                  'departtime'] +
-                                                              " --> " +
+                                                  SizedBox(width: 10),
+                                                  Expanded(
+                                                      flex: 4,
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: <Widget>[
+                                                          Text(
                                                               traindata[index][
-                                                                  'arrivetime'],
-                                                                  style: TextStyle(fontSize:14, color:Colors.white),
-                                                        ),
-                                                        
-                                                      ],
+                                                                      'origin'] +
+                                                                  " --> " +
+                                                                  traindata[
+                                                                          index]
+                                                                      [
+                                                                      'destination'],
+                                                              style: TextStyle(
+                                                                  fontSize: 13,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color: Colors
+                                                                      .white)),
+                                                          //Divider(color: Colors.white),
+                                                          Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            children: <Widget>[
+                                                              Text(
+                                                                traindata[index]
+                                                                        [
+                                                                        'departtime'] +
+                                                                    " --> " +
+                                                                    traindata[
+                                                                            index]
+                                                                        [
+                                                                        'arrivetime'],
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    color: Colors
+                                                                        .white),
+                                                              ),
+                                                            ],
+                                                          ),
+
+                                                          Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .start,
+                                                            //crossAxisAlignment: CrossAxisAlignment.center,
+                                                            children: <Widget>[
+                                                              Text(
+                                                                traindata[index]
+                                                                        [
+                                                                        'type'] +
+                                                                    " Seat",
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    color: Colors
+                                                                        .white),
+                                                              ),
+                                                              SizedBox(
+                                                                  width: 20),
+                                                              Text(
+                                                                "Available Seat ",
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    color: Colors
+                                                                        .white),
+                                                              ),
+                                                              Text(
+                                                                  traindata[
+                                                                          index]
+                                                                      [
+                                                                      'quantity'],
+                                                                  style: TextStyle(
+                                                                      color: Colors
+                                                                              .red[
+                                                                          300],
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold)),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      )),
+                                                  Expanded(
+                                                    child: Text(
+                                                      "RM  " +
+                                                          traindata[index]
+                                                              ['price'],
+                                                      maxLines: 1,
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          color: Colors.white),
                                                     ),
-                                                    
-                                                    Row(
-                                                      mainAxisAlignment:MainAxisAlignment.start,
-                                                      //crossAxisAlignment: CrossAxisAlignment.center,
-                                                      children: <Widget>[
-                                                        Text(traindata[index]
-                                                                ['type'] +
-                                                            " Seat",
-                                                                  style: TextStyle(fontSize:14, color:Colors.white),),
-                                                        SizedBox(width: 20),
-                                                        Text("Available Seat ",
-                                                                  style: TextStyle(fontSize:14, color:Colors.white),),
-                                                        Text(
-                                                            traindata[index]
-                                                                ['quantity'],
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .red[300], fontWeight: FontWeight.bold)),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                )),
-                                                Expanded(
-                                                  child: Text("RM  " +
-                                                            traindata[index]
-                                                                ['price'],maxLines: 1,
-                                                                  style: TextStyle(fontSize:14, color:Colors.white),),
-                                                
-                                                ),
-                                              ],
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ))
-                                  ],
-                                );
-                              }),
-                        )
-                ]),
+                                          ))
+                                    ],
+                                  );
+                                }),
+                          )
+                  ]),
+            ),
           ),
-         floatingActionButton: FloatingActionButton.extended(
-           onPressed: () async{ 
-             if(widget.user.email == "unregistered@redTrain.com"){
-               Toast.show("Please register to use this function", context,
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () async {
+              if (widget.user.email == "unregistered@redTrain.com") {
+                Toast.show("Please register to use this function", context,
                     duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
                 return;
-             }else if(widget.user.email == "admin@redTrain.com"){
-               Toast.show("Admin mode!!!", context,
+              } else if (widget.user.email == "admin@redTrain.com") {
+                Toast.show("Admin mode!!!", context,
                     duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
                 return;
-             }else if(widget.user.quantity == "0"){
-               Toast.show("cart empty", context,
+              } else if (widget.user.quantity == "0") {
+                Toast.show("cart empty", context,
                     duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
                 return;
-             }else{
-               await Navigator.push(
+              } else {
+                await Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (BuildContext context) => BookingScreen(user: widget.user)
-                            ));
-              _loadBookingQuantity();
-              _loadData();
-                            
-             }
-              
-           },
-           icon: Icon(Icons.shopping_basket,color:Colors.white),             
-           label: Text(bookingquantity.toString(),style: TextStyle(color: Colors.white,fontSize: 20)),
-           backgroundColor: Colors.red[300],
-           ),
+                        builder: (BuildContext context) =>
+                            BookingScreen(user: widget.user)));
+                _loadBookingQuantity();
+                _loadData();
+              }
+            },
+            icon: Icon(Icons.shopping_basket, color: Colors.white),
+            label: Text(bookingquantity.toString(),
+                style: TextStyle(color: Colors.white, fontSize: 20)),
+            backgroundColor: Colors.red[300],
+          ),
         ));
   }
 
+  showmap(int index) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Container();
+        });
+  }
+
   void _loadData() async {
-    String urlLoadJobs = server+"/php/load_trains2.php";
+    String urlLoadJobs = server + "/php/load_trains2.php";
     await http.post(urlLoadJobs, body: {}).then((res) {
       if (res.body == "nodata") {
         bookingquantity = "0";
         titlecenter = "No train found";
         setState(() {
-          traindata=null;
+          traindata = null;
         });
       } else {
         setState(() {
@@ -485,23 +531,21 @@ class _MainScreenState extends State<MainScreen> {
         });
         print(traindata);
       }
-
     }).catchError((err) {
       print(err);
     });
   }
 
-  void _loadBookingQuantity() async{
-    String urlLoadJobs = server+"/php/load_ticketquantity.php";
-    await http.post(urlLoadJobs,body:{
+  void _loadBookingQuantity() async {
+    String urlLoadJobs = server + "/php/load_ticketquantity.php";
+    await http.post(urlLoadJobs, body: {
       "email": widget.user.email,
-    }).then((res){
-      if(res.body == "nodata"){
-
-      }else{
+    }).then((res) {
+      if (res.body == "nodata") {
+      } else {
         widget.user.quantity = res.body;
       }
-    }).catchError((err){
+    }).catchError((err) {
       print(err);
     });
   }
@@ -571,14 +615,17 @@ class _MainScreenState extends State<MainScreen> {
                 widget.user.name.toString().substring(0, 1).toUpperCase(),
                 style: TextStyle(fontSize: 40.0),
               ),
-              //backgroundImage: NetworkImage("null"), //"http://slumberjer.com/grocery/profileimages/${widget.user.email}.jpg?"),
+              backgroundImage: NetworkImage(server +
+                  "/profileimages/${widget.user.email}.jpg?"), //"http://slumberjer.com/grocery/profileimages/${widget.user.email}.jpg?"),
             ),
             onDetailsPressed: () => {
               Navigator.pop(context),
               Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (BuildContext context)=> ProfileScreen(user: widget.user,
-                  )))
+                  MaterialPageRoute(
+                      builder: (BuildContext context) => ProfileScreen(
+                            user: widget.user,
+                          )))
             },
           ),
           ListTile(
@@ -602,7 +649,8 @@ class _MainScreenState extends State<MainScreen> {
               ),
               trailing: Icon(Icons.arrow_forward),
               onTap: () => {
-                    Navigator.pop(context),gotoCart(),
+                    Navigator.pop(context),
+                    gotoCart(),
                   }),
           ListTile(
             title: Text(
@@ -612,11 +660,8 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             trailing: Icon(Icons.arrow_forward),
-            onTap: ()=>{
-              Navigator.pop(context),
-            Navigator.push(context, MaterialPageRoute(builder: (BuildContext context)=> PaymentHistoryScreen(user:widget.user,
-            )))
-            }),
+            onTap: _paymentScreen,
+          ),
           ListTile(
               title: Text(
                 "User Profile",
@@ -634,6 +679,47 @@ class _MainScreenState extends State<MainScreen> {
                               ProfileScreen(user: widget.user),
                         ))
                   }),
+          ListTile(
+              title: Text(
+                "Make Report",
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+              trailing: Icon(Icons.arrow_forward),
+              onTap: () => {
+                    Navigator.pop(context),
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (BuildContext context) =>
+                              ReportScreen(user: widget.user),
+                        ))
+                  }),
+          ListTile(
+              title: Text(
+                "Log In",
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+              trailing: Icon(Icons.arrow_forward),
+              onTap: () => Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (BuildContext context) => LoginScreen()))),
+          ListTile(
+              title: Text(
+                "Log Out",
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+              trailing: Icon(Icons.arrow_forward),
+              onTap: () => Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (BuildContext context) => LoginScreen()))),
           Visibility(
             visible: _isadmin,
             child: Column(
@@ -650,7 +736,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 ListTile(
                     title: Text(
-                      "My Trains",
+                      "Manage Trains",
                       style: TextStyle(
                         color: Colors.white,
                       ),
@@ -661,27 +747,27 @@ class _MainScreenState extends State<MainScreen> {
                           Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (BuildContext context) =>
-                                    null, //AdminProduct(user: widget.user,)
-                              ))
+                                  builder: (BuildContext context) => AdminTrain(
+                                        user: widget.user,
+                                      )))
                         }),
+                
                 ListTile(
                   title: Text(
-                    "Customer Bookings",
+                    "Customer Report",
                     style: TextStyle(
                       color: Colors.white,
                     ),
                   ),
                   trailing: Icon(Icons.arrow_forward),
-                ),
-                ListTile(
-                  title: Text(
-                    "Report",
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                  trailing: Icon(Icons.arrow_forward),
+                  onTap: () => {
+                    Navigator.pop(context),
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (BuildContext context) =>
+                                ReportTrain()))
+                  },
                 ),
               ],
             ),
@@ -780,10 +866,13 @@ class _MainScreenState extends State<MainScreen> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Text(traindata[index]['origin']+" --> "+traindata[index]['destination'],
-                  style: TextStyle(color: Colors.white)),
+                  Text(
+                      traindata[index]['origin'] +
+                          " --> " +
+                          traindata[index]['destination'],
+                      style: TextStyle(color: Colors.white)),
                   SizedBox(
-                    height:10,
+                    height: 10,
                   ),
                   Text(
                     "Select quantity of ticket",
@@ -815,7 +904,8 @@ class _MainScreenState extends State<MainScreen> {
                             onPressed: () => {
                               newSetState(() {
                                 if (quantity <
-                                    (int.parse(traindata[index]['quantity'])-2)) {
+                                    (int.parse(traindata[index]['quantity']) -
+                                        2)) {
                                   quantity++;
                                 } else {
                                   Toast.show("Quantity not available", context,
@@ -837,7 +927,7 @@ class _MainScreenState extends State<MainScreen> {
                     onPressed: () {
                       Navigator.of(context).pop(false);
                       _addtoCart(index);
-                      _loadBookingQuantity();
+                      //_loadBookingQuantity();
                     },
                     child: Text(
                       "Yes",
@@ -848,7 +938,6 @@ class _MainScreenState extends State<MainScreen> {
                 MaterialButton(
                     onPressed: () {
                       Navigator.of(context).pop(false);
-                      
                     },
                     child: Text(
                       "Cancel",
@@ -869,7 +958,7 @@ class _MainScreenState extends State<MainScreen> {
       return;
     }
     if (widget.user.email == "admin@redTrain.com") {
-      Toast.show("Admin mode", context,
+      Toast.show("Admin mode!", context,
           duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
       return;
     }
@@ -883,12 +972,11 @@ class _MainScreenState extends State<MainScreen> {
             type: ProgressDialogType.Normal, isDismissible: true);
         pr.style(message: "Booking ticket...");
         pr.show();
-        String urlLoadJobs =server+"/php/insert_ticket.php";
+        String urlLoadJobs = server + "/php/insert_ticket.php";
         http.post(urlLoadJobs, body: {
           "email": widget.user.email,
           "trainid": traindata[index]["id"],
           "quantity": quantity.toString(),
-          
         }).then((res) {
           print(res.body);
           if (res.body == "failed") {
@@ -900,11 +988,9 @@ class _MainScreenState extends State<MainScreen> {
             List respond = res.body.split(",");
             setState(() {
               bookingquantity = respond[1];
-              widget.user.quantity=bookingquantity;
+              widget.user.quantity = bookingquantity;
             });
-            //Navigator.push(context,MaterialPageRoute(builder: (BuildContext context) =>
-            //BookingScreen(user: widget.user),));
-            //_onTicketDetail(index);
+
             Toast.show("Success add booking ticket", context,
                 duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
           }
@@ -923,6 +1009,7 @@ class _MainScreenState extends State<MainScreen> {
           duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
     }
   }
+
   gotoCart() async {
     if (widget.user.email == "unregistered@redTrain.com") {
       Toast.show("Please register to use this function", context,
@@ -940,13 +1027,45 @@ class _MainScreenState extends State<MainScreen> {
       await Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (BuildContext context) => BookingScreen(user: widget.user)));
+              builder: (BuildContext context) =>
+                  BookingScreen(user: widget.user)));
 
       _loadData();
       _loadBookingQuantity();
     }
   }
 
+  gotoMap() async {
+    Navigator.push(context,
+        MaterialPageRoute(builder: (BuildContext context) => MapScreen()));
+  }
 
+  void _paymentScreen() {
+    if (widget.user.email == "unregistered@redTrain.com") {
+      Toast.show("Please register to use this function", context,
+          duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+      return;
+    } else if (widget.user.email == "admin@redTrain.com") {
+      Toast.show("Admin mode!!!", context,
+          duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+      return;
+    }
+    Navigator.pop(context);
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (BuildContext context) => PaymentHistoryScreen(
+                  user: widget.user,
+                )));
+  }
+
+  Future<Null> refreshList() async {
+    await Future.delayed(Duration(seconds: 2));
+    _loadData();
+    return null;
+  }
+
+  
+  
   
 }
